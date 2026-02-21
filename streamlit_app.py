@@ -1,11 +1,12 @@
 """
-Doplnok dávky rádioterapie pre UVN RK
+Doplnok davky pre UVN RK
 
-(c) 2026 Radoslav Paučo
+(c) Radoslav Paučo
 """
 
 import streamlit as st
 import numpy as np
+import pandas as pd
 
 # -- Set page config
 apptitle = 'Doplnok dávky'
@@ -104,6 +105,24 @@ with cols[1]:
     st.metric(label="Celková OARs BED",value=f"{bed_org_add:0.2f} Gy_{ab_org}",
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
 
+st.markdown('#')
+pomocka = st.checkbox("Pomôcka: zaklikni, ak chceš vidieť prehľad parametrov tumorov z literatúry.")
+
+if pomocka:
+    ab_params = pd.read_csv("ab_params.csv", sep=";", dtype=str)
+    ab_params = ab_params.rename(columns={"ab": "$\\alpha/\\beta$ (Gy)",
+                                          "ab-rozsah": "95% CL pre $\\alpha/\\beta$ (Gy)",
+                                          "ref": "referencia"})
+
+    st.table(ab_params)
+
+    prolif_params = pd.read_csv("prolif_params.csv", sep=";", dtype=str)
+    prolif_params = prolif_params.rename(columns={"k": "k (Gy/d)",
+                                                  "k-rozsah": "95% CL pre k (Gy/d)",
+                                                  "tdelay": "$t_{delay}$ (d)",
+                                                  "ref": "referencia"})
+
+    st.table(prolif_params)
 
 st.markdown('#')
 st.markdown('(c) Radoslav Paučo, ÚVN SNP Ružomberok FN, paucor@uvn.sk')
