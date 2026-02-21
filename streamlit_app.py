@@ -1,7 +1,7 @@
 """
-Doplnok davky pre UVN RK
+Doplnok dávky rádioterapie pre UVN RK
 
-(c) Radoslav Paučo
+(c) 2026 Radoslav Paučo
 """
 
 import streamlit as st
@@ -17,8 +17,8 @@ st.title('Doplnok dávky rádioterapie :radioactive:')
 
 st.sidebar.markdown("## Výber parametrov pre tumor/OARs:")
 
-ab_tumor = st.sidebar.number_input("$\\alpha/\\beta~pre~tumor$", min_value=1, max_value=10, value=10)
-ab_org = st.sidebar.number_input("$\\alpha/\\beta~pre~OAR$", min_value=1, max_value=10, value=3)
+ab_tumor = st.sidebar.number_input("$\\alpha/\\beta~pre~tumor$", min_value=0.1, max_value=20.0, value=10.0, step=0.1)
+ab_org = st.sidebar.number_input("$\\alpha/\\beta~pre~OAR$", min_value=0.1, max_value=20.0, value=3.0, step=0.1)
 k = st.sidebar.number_input("$k~pre~tumor$", min_value=0.0, max_value=3.0, step=0.05, value=0.9,
                             help="Proliferačný parameter v Gy/d pre tumor. Pre OARs uvažujeme k=0.")
 t_delay = st.sidebar.number_input("$t_{delay}$", min_value=0, max_value=100, value=28,
@@ -36,7 +36,11 @@ st.markdown('####')
 bed_org_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_org)
 
 # predpisana BED na tumor
-bed_tumor_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_tumor) - k * (pocet_dni_pk - t_delay)
+
+if pocet_dni_pk > t_delay:
+    bed_tumor_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_tumor) - k * (pocet_dni_pk - t_delay)
+else:
+    bed_tumor_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk / ab_tumor)
 
 cols = st.columns(2)
 with cols[0]:
@@ -62,14 +66,17 @@ with cols[1]:
 
 cols = st.columns(2)
 with cols[0]:
-    tumor_control = st.number_input("tumor control %", min_value=1, max_value=100, value=100)
+    tumor_control = st.number_input("tumor control %", min_value=0, max_value=100, value=100)
     tumor_control = tumor_control/100.0 # 1 <=> 100% prepisanej BED
 
 bed_tumor_rk = bed_tumor_pk*tumor_control
 
 # doplnok
 bed_pred_pauzou_k0 = pocet_f_pred_pauzou * frakcia_pk * (1 + frakcia_pk/ab_tumor)
-utlm = k * (pocet_dni_rk - t_delay)
+if pocet_dni_rk > t_delay:
+    utlm = k * (pocet_dni_rk - t_delay)
+else:
+    utlm = 0.0
 c = bed_pred_pauzou_k0 - utlm - bed_tumor_rk
 b = (pocet_f_po_pauze + pocet_pridanych_f)
 a = (pocet_f_po_pauze + pocet_pridanych_f) / ab_tumor
