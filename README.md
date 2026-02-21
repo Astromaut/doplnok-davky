@@ -1,8 +1,13 @@
-# 🎈 Blank app template
+# 🎈 Doplnok dávky
 
-A simple Streamlit app template for you to modify!
+### Čo to je?
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+Táto aplikácia pomáha vypočítať navýšené a doplnené frakcie pre prípady kedy je rádioterapia z rôznych dôvodov prerušená, aby sa tak prispelo k zachovaniu biologického účinku naordinovanej rádioterapie.
+
+Je založená na báze LQ modelu s akcelerovanou repopuláciou
+
+Ref: [Dale et al. (2002)](https://pubmed.ncbi.nlm.nih.gov/12555877/)
+
 
 ### How to run it on your own machine
 
