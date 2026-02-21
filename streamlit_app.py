@@ -52,17 +52,17 @@ cols = st.columns(2)
 with cols[0]:
     pocet_f_pred_pauzou = st.number_input("počet frakcií pred pauzou", min_value=1, max_value=365, value=23)
 with cols[1]:
-    pocet_f_po_pauze = st.number_input("počet frakcií po pauze", min_value=1, max_value=50, value=4)
+    pocet_f_po_pauze = st.number_input("počet frakcií po pauze", min_value=0, max_value=50, value=4)
 
 cols = st.columns(2)
 with cols[0]:
-    pocet_pridanych_f = st.number_input("počet pridaných frakcií", min_value=1, max_value=50, value=2)
+    pocet_pridanych_f = st.number_input("počet pridaných frakcií", min_value=0, max_value=50, value=2)
 with cols[1]:
     pocet_dni_rk = st.number_input("celkový počet dní kurzu", min_value=1, max_value=365, value=50)
 
 cols = st.columns(2)
 with cols[0]:
-    tumor_control = st.number_input("tumor control %", min_value=0, max_value=100, value=100)
+    tumor_control = st.number_input("tumor control %", min_value=1, max_value=100, value=100)
     tumor_control = tumor_control/100.0 # 1 <=> 100% prepisanej BED
 
 bed_tumor_rk = bed_tumor_pk*tumor_control
