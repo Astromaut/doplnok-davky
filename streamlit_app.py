@@ -83,6 +83,9 @@ b = (pocet_f_po_pauze + pocet_pridanych_f)
 a = (pocet_f_po_pauze + pocet_pridanych_f) / ab_tumor
 doplnok_f = (-b + np.sqrt(b*b-4*a*c))/(2*a)
 
+if np.isnan(doplnok_f):
+    doplnok_f = 0
+
 st.markdown('####')
 
 # navysena BED na organy
@@ -92,17 +95,23 @@ bed_org_navyse_perc = ((bed_org_add/bed_org_pk)-1)*100
 # kontrola znizenie BED na tumor
 bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
-cols = st.columns(2)
-with cols[0]:
-    st.metric(label="Navýšenie frakcií a doplnok po pauze",value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + {pocet_pridanych_f} x "
-                                              f"{doplnok_f:0.2f} Gy")
-with cols[1]:
-    st.metric(label="Celková tumor BED",value=f"{bed_tumor_rk:0.2f} Gy_{ab_tumor}",
-              delta=f"{bed_tumor_ponize_perc:0.1f}\%")
+st.metric(label="Navýšenie frakcií a doplnok po pauze",value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + {pocet_pridanych_f} x "
+                                            f"{doplnok_f:0.2f} Gy")
 
 cols = st.columns(2)
+with cols[0]:
+    st.metric(label="Tumor BED s manažmentom prerušení",value=f"{bed_tumor_rk:0.2f} Gy_{ab_tumor}",
+              delta=f"{bed_tumor_ponize_perc:0.1f}\%")
 with cols[1]:
-    st.metric(label="Celková OARs BED",value=f"{bed_org_add:0.2f} Gy_{ab_org}",
+    bed_tumor_rk_bezm = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_tumor) - k * (pocet_dni_rk - pocet_pridanych_f - t_delay)
+    bed_tumor_ponize_bezm_perc = ((bed_tumor_rk_bezm/bed_tumor_pk)-1)*100
+    st.metric(label="Tumor BED bez manažmentu prerušení",value=f"{bed_tumor_rk_bezm:0.2f} Gy_{ab_tumor}",
+              delta=f"{bed_tumor_ponize_bezm_perc:0.1f}\%", help="Pre presný výpočet tejto metriky nastav $počet~pridaných~frakcií$ na 0 a $celkový~počet~dní~kurzu$ na reálny počet dní za ktorý (by) bol pôvodný predpísaný kurz odžiarený, " \
+              "inak útlm dávky defaultne ráta s hodnotou $celkový~počet~dní~kurzu - počet~pridaných~frakcií$. Toto je dôležité pri prídavkoch, ktoré zasahujú do viacerých pracovných týždňov.")
+
+cols = st.columns(2)
+with cols[0]:
+    st.metric(label="OARs BED s manažmentom prerušení",value=f"{bed_org_add:0.2f} Gy_{ab_org}",
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
 
 st.markdown('#')
