@@ -58,7 +58,7 @@ cez_datumy = st.checkbox("Zaklikni, ak chceš zadať dĺžku kurzu podľa kalend
 if cez_datumy:
     cols = st.columns(2)
     with cols[0]:
-        start_date = st.date_input('Dátum zahájenia terapie.', date(2025, 11, 26))
+        start_date = st.date_input('Dátum zahájenia rádioterapie.', date(2025, 11, 26))
     with cols[1]:
         end_date = st.date_input('Dátum ukončenia rádioterapie.', date(2026, 1, 14))
     pocet_dni_rk = (end_date - start_date + timedelta(days=1)).days
