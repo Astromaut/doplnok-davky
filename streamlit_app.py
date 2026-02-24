@@ -58,9 +58,9 @@ cez_datumy = st.checkbox("Zaklikni, ak chceš zadať dĺžku kurzu podľa kalend
 if cez_datumy:
     cols = st.columns(2)
     with cols[0]:
-        start_date = st.date_input('Dátum zahájenia rádioterapie.', date(2025, 11, 26))
+        start_date = st.date_input('dátum zahájenia rádioterapie', date(2025, 11, 26))
     with cols[1]:
-        end_date = st.date_input('Dátum ukončenia rádioterapie.', date(2026, 1, 14))
+        end_date = st.date_input('dátum ukončenia rádioterapie', date(2026, 1, 14))
     pocet_dni_rk = (end_date - start_date + timedelta(days=1)).days
 
     cols = st.columns(2)
@@ -124,7 +124,7 @@ with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
                                                                  f"{pocet_pridanych_f} x {doplnok_f:0.2f} Gy")
 with cols[1]:
-    st.metric(label="Počet dní reálneho kurzu rádioterapie.", value=pocet_dni_rk,
+    st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
               delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
 
 cols = st.columns(2)
