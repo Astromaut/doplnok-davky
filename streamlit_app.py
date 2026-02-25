@@ -19,7 +19,7 @@ ab_tumor = st.sidebar.number_input("$\\alpha/\\beta~pre~tumor$", min_value=0.1, 
 ab_org = st.sidebar.number_input("$\\alpha/\\beta~pre~OAR$", min_value=0.1, max_value=20.0, value=3.0, step=0.1)
 
 k = st.sidebar.number_input("$k~pre~tumor$", min_value=0.0, max_value=3.0, step=0.05, value=0.9,
-                            help="Proliferačný parameter v Gy/d pre tumor. Pre OARs uvažujeme k=0.")
+                            help="Útlm BED za deň (Gy/d) pre tumor v dôsledku repopulácie. Pre OARs uvažujeme k=0.")
 
 t_delay = st.sidebar.number_input("$t_{delay}$", min_value=0, max_value=100, value=28,
                             help="Čas od začiatku terapie kedy nastupuje akcelerovaná repopulácia v dňoch.")
@@ -145,7 +145,9 @@ with cols[0]:
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
 
 st.markdown('#')
-pomocka = st.checkbox("Pomôcka: zaklikni, ak chceš vidieť prehľad parametrov tumorov z literatúry.")
+pomocka = st.checkbox("Pomôcka: zaklikni, ak chceš vidieť prehľad parametrov tumorov z literatúry. Vzťah medzi "
+                      "$k$ a $D_{prolif}$: $k=D_{prolif}(1 + d/(\\alpha/\\beta))$, kde $d$ je veľkosť referenčnej "
+                      "frakcie.")
 
 if pomocka:
     ab_params = pd.read_csv("ab_params.csv", sep=";", dtype=str)
@@ -156,8 +158,8 @@ if pomocka:
     st.table(ab_params)
 
     prolif_params = pd.read_csv("prolif_params.csv", sep=";", dtype=str)
-    prolif_params = prolif_params.rename(columns={"k": "k (Gy/d)",
-                                                  "k-rozsah": "95% CL pre k (Gy/d)",
+    prolif_params = prolif_params.rename(columns={"dprolif": "$D_{prolif}$ (Gy/d)",
+                                                  "dprolif-rozsah": "95% CL pre $D_{prolif}$ (Gy/d)",
                                                   "tdelay": "$t_{delay}$ (d)",
                                                   "ref": "referencia"})
 
