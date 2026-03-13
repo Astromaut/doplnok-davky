@@ -26,7 +26,7 @@ t_delay = st.sidebar.number_input("$t_{delay}$", min_value=0, max_value=100, val
 
 st.sidebar.markdown("## Parametre predpísaného kurzu (ideál):")
 
-frakcia_pk = st.sidebar.number_input("dávka na frakciu", min_value=1, max_value=10, value=2)
+frakcia_pk = st.sidebar.number_input("dávka na frakciu", min_value=0.1, max_value=10.0, value=2.0, step=0.1)
 
 pocet_f_pk = st.sidebar.number_input("počet frakcií", min_value=1, max_value=50, value=27)
 
