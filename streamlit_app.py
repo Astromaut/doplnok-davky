@@ -33,6 +33,12 @@ pocet_f_pk = st.sidebar.number_input("počet frakcií", min_value=1, max_value=5
 pocet_dni_pk = st.sidebar.number_input("počet dní kurzu", min_value=1, max_value=365, value=37,
                                        help="Ideálna dĺžka predpísanej rádioterapie bez prerušení v dňoch.")
 
+st.sidebar.markdown("##")
+
+st.sidebar.link_button(
+    "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
+)
+
 st.markdown('####')
 
 # predpisana BED na organy (_pk znaci predpisany kurz, _rk znaci realny kurz)
