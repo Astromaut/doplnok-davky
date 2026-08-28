@@ -79,7 +79,7 @@ if cez_datumy:
     with cols[0]:
         pocet_pridanych_f = st.number_input("počet pridaných frakcií", min_value=0, max_value=50, value=2)
     with cols[1]:
-        tumor_control = st.number_input("tumor control %", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
+        tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 else:
     cols = st.columns(2)
@@ -96,7 +96,7 @@ else:
 
     cols = st.columns(2)
     with cols[0]:
-        tumor_control = st.number_input("tumor control %", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
+        tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 
 bed_tumor_rk = bed_tumor_pk*tumor_control
@@ -115,11 +115,17 @@ doplnok_f = (-b + np.sqrt(b*b-4*a*c))/(2*a)
 if np.isnan(doplnok_f):
     doplnok_f = 0
 
+pridanie = doplnok_f
+if doplnok_f > 0 and doplnok_f < frakcia_pk:
+    zvysok = frakcia_pk - doplnok_f
+    pridanie = doplnok_f - (pocet_f_po_pauze * zvysok) / pocet_pridanych_f
+    doplnok_f = frakcia_pk
+
 st.markdown('####')
 
 # navysena BED na organy
-bed_org_add = (pocet_f_pred_pauzou * frakcia_pk * (1+frakcia_pk/ab_org) + (pocet_f_po_pauze + pocet_pridanych_f) *
-               doplnok_f * (1+doplnok_f/ab_org))
+bed_org_add = (pocet_f_pred_pauzou * frakcia_pk * (1+frakcia_pk/ab_org) + pocet_f_po_pauze *
+               doplnok_f * (1+doplnok_f/ab_org) + pocet_pridanych_f * pridanie * (1+pridanie/ab_org))
 bed_org_navyse_perc = ((bed_org_add/bed_org_pk)-1)*100
 
 # kontrola znizenie BED na tumor
@@ -128,7 +134,7 @@ bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
-                                                                 f"{pocet_pridanych_f} x {doplnok_f:0.2f} Gy")
+                                                                 f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
 with cols[1]:
     st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
               delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
