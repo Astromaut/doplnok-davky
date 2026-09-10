@@ -33,12 +33,6 @@ pocet_f_pk = st.sidebar.number_input("počet frakcií", min_value=1, max_value=5
 pocet_dni_pk = st.sidebar.number_input("počet dní kurzu", min_value=1, max_value=365, value=37,
                                        help="Ideálna dĺžka predpísanej rádioterapie bez prerušení v dňoch.")
 
-st.sidebar.markdown("##")
-
-st.sidebar.link_button(
-    "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
-)
-
 st.markdown('####')
 
 # predpisana BED na organy (_pk znaci predpisany kurz, _rk znaci realny kurz)
@@ -99,6 +93,21 @@ else:
         tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 
+tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať objem " \
+                     "a bunkovú koncentráciu nádoru a parameter $\\alpha$ v ľavom stĺpci dole.")
+
+if tcp_on:
+    st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
+    a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.05)
+    rho_tumor = st.sidebar.number_input("$koncentrácia~buniek~tumoru~[cm^{-3}]$", min_value=1e5, max_value=1e12, value=1e8, step=1e5, format="%e")
+    objem_tumor = st.sidebar.number_input("$objem~tumoru~[cm^{3}]$", min_value=0.1, max_value=10000.0, value=10.0, step=0.1)
+
+st.sidebar.markdown("##")
+
+st.sidebar.link_button(
+    "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
+)
+
 bed_tumor_rk = bed_tumor_pk*tumor_control
 
 # Vypocet navysenia doplnku
@@ -131,13 +140,17 @@ bed_org_navyse_perc = ((bed_org_add/bed_org_pk)-1)*100
 # kontrola znizenie BED na tumor
 bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
+# vypocet znizeneho TCP
+# tu bude samotny vypocet povodne - nove TCP ako pokles
+
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
-with cols[1]:
-    st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
-              delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+if tcp_on:
+    with cols[1]:
+        st.metric(label="Pokles TCP v %", value=0,
+                delta=f"{-((1/1)-1)*100:0.1f}\%")
 
 cols = st.columns(2)
 with cols[0]:
@@ -148,13 +161,20 @@ with cols[1]:
                                                                                    - t_delay)
     bed_tumor_ponize_bezm_perc = ((bed_tumor_rk_bezm/bed_tumor_pk)-1)*100
     st.metric(label="Tumor BED bez manažmentu prerušení", value=f"{bed_tumor_rk_bezm:0.2f} Gy_{ab_tumor}",
-              delta=f"{bed_tumor_ponize_bezm_perc:0.1f}\%", help="Pre presný výpočet tejto metriky nastav $počet~pridaných~frakcií$ na 0 a $celkový~počet~dní~kurzu$ na reálny počet dní za ktorý (by) bol pôvodný predpísaný kurz odžiarený, " \
-              "inak útlm dávky defaultne ráta s hodnotou $celkový~počet~dní~kurzu - počet~pridaných~frakcií$. Toto je dôležité pri prídavkoch, ktoré zasahujú do viacerých pracovných týždňov.")
+              delta=f"{bed_tumor_ponize_bezm_perc:0.1f}\%", help="Pre presný výpočet tejto metriky nastav " \
+              "$počet~pridaných~frakcií$ na 0 a $celkový~počet~dní~kurzu$ na reálny počet dní za ktorý (by) " \
+              "bol pôvodný predpísaný kurz odžiarený, inak útlm dávky defaultne ráta s hodnotou " \
+              "$celkový~počet~dní~kurzu - počet~pridaných~frakcií$. Toto je dôležité pri prídavkoch, " \
+              "ktoré zasahujú do viacerých pracovných týždňov.")
 
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="OARs BED s manažmentom prerušení", value=f"{bed_org_add:0.2f} Gy_{ab_org}",
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
+
+with cols[1]:
+    st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
+              delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
 
 st.markdown('#')
 pomocka = st.checkbox("Pomôcka: zaklikni, ak chceš vidieť prehľad parametrov tumorov z literatúry. Vzťah medzi "
