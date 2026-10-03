@@ -1,7 +1,7 @@
 """
-Doplnok dávky rádioterapie pre ÚVN Ružomberok
+Doplnok dávky rádioterapie pre ÚVN SNP Ružomberok FN
 
-(c) Radoslav Paučo
+(c) Radoslav Paučo 2026
 """
 
 import streamlit as st
@@ -9,9 +9,13 @@ import numpy as np
 import pandas as pd
 from datetime import date, timedelta
 
+# Nastavenie stránky
+# Pod doplnkom mame na mysli bud navysenie a/alebo pridanie frakcii po preruseni kurzu radioterapie
+# aby sa dosiahla predpisana BED na tumor
 st.set_page_config(page_title='Doplnok dávky', page_icon=":radioactive:")
 st.title('Doplnok dávky rádioterapie :radioactive:')
 
+# Sidebar - vyber zakladnych parametrov
 st.sidebar.markdown("## Výber parametrov pre tumor/OARs:")
 
 ab_tumor = st.sidebar.number_input("$\\alpha/\\beta~pre~tumor$", min_value=0.1, max_value=20.0, value=10.0,
@@ -35,7 +39,8 @@ pocet_dni_pk = st.sidebar.number_input("počet dní kurzu", min_value=1, max_val
 
 st.markdown('####')
 
-# predpisana BED na organy (_pk znaci predpisany kurz, _rk znaci realny kurz)
+# Vypocet BED pre OARs a tumor
+# _pk znaci predpisany kurz, _rk znaci realny kurz
 bed_org_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_org)
 
 # predpisana BED na tumor
@@ -44,6 +49,7 @@ if pocet_dni_pk > t_delay:
 else:
     bed_tumor_pk = pocet_f_pk * frakcia_pk * (1 + frakcia_pk / ab_tumor)
 
+# Stredovy - hlavny panel
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Predpísaná tumor BED", value=f"{bed_tumor_pk:0.2f} Gy_{ab_tumor}")
@@ -54,6 +60,7 @@ st.markdown('####')
 
 st.markdown("#### Parametre odžiareného kurzu (reál):")
 
+# Parametre realneho kurzu
 cez_datumy = st.checkbox("Zaklikni, ak chceš zadať dĺžku kurzu podľa kalendára.")
 if cez_datumy:
     cols = st.columns(2)
@@ -93,6 +100,7 @@ else:
         tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 
+# Sidebar - volitelne parametre pre vypocet TCP
 tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať objem " \
                      "a bunkovú koncentráciu nádoru a parameter $\\alpha$ v ľavom stĺpci dole.")
 
@@ -104,28 +112,50 @@ if tcp_on:
 
 st.sidebar.markdown("##")
 
+# Sidebar - link na navod
 st.sidebar.link_button(
     "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
 )
 
+# osetrenie nefyzikalnych vstupov - ak su obe hodnoty parametrov nula, nastavime 1 pridanu frakciu
+if pocet_f_po_pauze == 0 and pocet_pridanych_f == 0:
+    pocet_pridanych_f = 1
+    st.warning(
+        "Obe hodnoty parametrov - počet frakcií po pauze a počet pridaných frakcií - boli nula. " \
+        "Automaticky som nastavil 1 pridanú frakciu, aby sa mohol vypočítať doplnok."
+    )
+
+# Vypocet doplnku
 bed_tumor_rk = bed_tumor_pk*tumor_control
 
-# Vypocet navysenia doplnku
-bed_pred_pauzou_k0 = pocet_f_pred_pauzou * frakcia_pk * (1 + frakcia_pk/ab_tumor)
-if pocet_dni_rk > t_delay:
-    utlm = k * (pocet_dni_rk - t_delay)
-else:
-    utlm = 0.0
+bed_pred_pauzou_k0 = pocet_f_pred_pauzou * frakcia_pk * (1 + frakcia_pk / ab_tumor)
+repopulacia_dni = max(0.0, pocet_dni_rk - t_delay)
+utlm = k * repopulacia_dni if pocet_dni_rk > t_delay else 0.0
+
+zostavajuce_f = pocet_f_po_pauze + pocet_pridanych_f
 c = bed_pred_pauzou_k0 - utlm - bed_tumor_rk
-b = (pocet_f_po_pauze + pocet_pridanych_f)
-a = (pocet_f_po_pauze + pocet_pridanych_f) / ab_tumor
-doplnok_f = (-b + np.sqrt(b*b-4*a*c))/(2*a)
+b = zostavajuce_f
+a = zostavajuce_f / ab_tumor
+discriminant = b * b - 4 * a * c
+
+if discriminant < 0:
+    doplnok_f = 0.0
+    st.warning(
+        "Zvolené parametre nie sú fyzikálne." \
+        "Skontrolujte zadané parametre."
+    )
+
+else:
+    doplnok_f = (-b + np.sqrt(discriminant)) / (2*a)
 
 if np.isnan(doplnok_f):
-    doplnok_f = 0
+    doplnok_f = 0.0
 
+# Klinicke pravidlo: ak je vypocitana (rovnomerna) kompenzacia mensia
+# ako povodne predpisana frakcia, necháme zostavajuce frakcie po pauze 
+# nezmenene a pracujeme len s pridanými frakciami
 pridanie = doplnok_f
-if doplnok_f > 0 and doplnok_f < frakcia_pk:
+if doplnok_f > 0 and doplnok_f < frakcia_pk and pocet_pridanych_f > 0:
     zvysok = frakcia_pk - doplnok_f
     pridanie = doplnok_f - (pocet_f_po_pauze * zvysok) / pocet_pridanych_f
     doplnok_f = frakcia_pk
@@ -140,9 +170,10 @@ bed_org_navyse_perc = ((bed_org_add/bed_org_pk)-1)*100
 # kontrola znizenie BED na tumor
 bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
-# vypocet znizeneho TCP
+# Vypocet znizeneho TCP
 # tu bude samotny vypocet povodne - nove TCP ako pokles
 
+# Stredovy panel - prezentacia vysledkov
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
@@ -197,6 +228,7 @@ if pomocka:
 
     st.table(prolif_params)
 
+# Paticka - copyright
 st.markdown('#')
 st.markdown('(c) Radoslav Paučo, ÚVN SNP Ružomberok FN, paucor@uvn.sk')
 st.image("linac.jpg")
