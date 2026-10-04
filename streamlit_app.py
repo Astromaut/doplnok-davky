@@ -101,14 +101,13 @@ else:
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 
 # Sidebar - volitelne parametre pre vypocet TCP
-tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať objem " \
-                     "a bunkovú koncentráciu nádoru a parameter $\\alpha$ v ľavom stĺpci dole.")
+tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať " \
+                     "referenčné TCP pôvodne zamýšľaného kurzu a parameter $\\alpha$ pre tumor v ľavom stĺpci dole.")
 
 if tcp_on:
     st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
     a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.05)
-    rho_tumor = st.sidebar.number_input("$koncentrácia~buniek~tumoru~[cm^{-3}]$", min_value=1e5, max_value=1e12, value=1e8, step=1e5, format="%e")
-    objem_tumor = st.sidebar.number_input("$objem~tumoru~[cm^{3}]$", min_value=0.1, max_value=10000.0, value=10.0, step=0.1)
+    tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.95, step=0.01)
 
 st.sidebar.markdown("##")
 
@@ -141,7 +140,7 @@ discriminant = b * b - 4 * a * c
 if discriminant < 0:
     doplnok_f = 0.0
     st.warning(
-        "Zvolené parametre nie sú fyzikálne." \
+        "Zvolené parametre nie sú fyzikálne alebo inak nedávajú zmysel." \
         "Skontrolujte zadané parametre."
     )
 
@@ -171,17 +170,27 @@ bed_org_navyse_perc = ((bed_org_add/bed_org_pk)-1)*100
 bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
 # Vypocet znizeneho TCP
-# tu bude samotny vypocet povodne - nove TCP ako pokles
+# tu bude samotny vypocet povodne TCP - nove TCP ako pokles
+if tcp_on:
+    delta_bed = bed_tumor_pk - bed_tumor_rk
+    # print(f"delta_bed: {delta_bed}")
+    # print(f"a_tumor * delta_bed: {a_tumor * delta_bed}")
+    # print(f"(np.exp(a_tumor * delta_bed)): {(np.exp(a_tumor * delta_bed))}")
+    tcp_rk = tcp_pk**(np.exp(a_tumor * delta_bed))
+    #print(f"tcp_rk: {tcp_rk}")
+    tcp_rk_perc = ((tcp_rk/tcp_pk)-1)*100
+    # print(f"tcp_rk_perc: {tcp_rk_perc}")
 
 # Stredovy panel - prezentacia vysledkov
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
-                                                                 f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
+                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
 if tcp_on:
     with cols[1]:
-        st.metric(label="Pokles TCP v %", value=0,
-                delta=f"{-((1/1)-1)*100:0.1f}\%")
+        st.metric(label="TCP reálneho kurzu", 
+                  value=f"{tcp_rk:0.2f}",
+                  delta=f"{tcp_rk_perc:0.1f}\%")
 
 cols = st.columns(2)
 with cols[0]:
