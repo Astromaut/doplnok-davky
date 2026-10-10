@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 from datetime import date, timedelta
 
-# Nastavenie stránky
+# Nastavenie stranky
 # Pod doplnkom mame na mysli bud navysenie a/alebo pridanie frakcii po preruseni kurzu radioterapie
-# aby sa dosiahla predpisana BED na tumor
+# aby sa dosiahla predpisana BED (TCP) na tumor
 st.set_page_config(page_title='Doplnok dávky', page_icon=":radioactive:")
 st.title('Doplnok dávky rádioterapie :radioactive:')
 
@@ -72,32 +72,44 @@ if cez_datumy:
 
     cols = st.columns(2)
     with cols[0]:
-        pocet_f_pred_pauzou = st.number_input("počet frakcií pred pauzou", min_value=1, max_value=365, value=23)
+        pocet_f_pred_pauzou = st.number_input("počet odžiarených frakcií", min_value=1, max_value=365, value=23,
+                                              help="Počet frakcií, ktoré boli odžiarené a už ich nie je možné navýšiť.")
     with cols[1]:
-        pocet_f_po_pauze = st.number_input("počet frakcií po pauze", min_value=0, max_value=50, value=4)
+        pocet_f_po_pauze = st.number_input("počet frakcií, kt. chceme navýšiť", min_value=0, max_value=50, value=4,
+                                           help="Počet frakcií na konci predpísaného kurzu, ktoré chceme navýšiť.")
 
     cols = st.columns(2)
     with cols[0]:
-        pocet_pridanych_f = st.number_input("počet pridaných frakcií", min_value=0, max_value=50, value=2)
+        pocet_pridanych_f = st.number_input("počet pridaných extra frakcií", min_value=0, max_value=50, value=2,
+                                            help="Počet frakcií, ktoré chceme pridať extra po dožiarení pôvodného " \
+                                            "kurzu (s navýšenými frakciami).")
     with cols[1]:
         tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 else:
     cols = st.columns(2)
     with cols[0]:
-        pocet_f_pred_pauzou = st.number_input("počet frakcií pred pauzou", min_value=1, max_value=365, value=23)
+        pocet_f_pred_pauzou = st.number_input("počet odžiarených frakcií", min_value=1, max_value=365, value=23,
+                                              help="Počet frakcií, ktoré boli odžiarené a už ich nie je možné navýšiť.")
     with cols[1]:
-        pocet_f_po_pauze = st.number_input("počet frakcií po pauze", min_value=0, max_value=50, value=4)
+        pocet_f_po_pauze = st.number_input("počet frakcií, kt. chceme navýšiť", min_value=0, max_value=50, value=4,
+                                           help="Počet frakcií na konci predpísaného kurzu, ktoré chceme navýšiť.")
 
     cols = st.columns(2)
     with cols[0]:
-        pocet_pridanych_f = st.number_input("počet pridaných frakcií", min_value=0, max_value=50, value=2)
+        pocet_pridanych_f = st.number_input("počet pridaných extra frakcií", min_value=0, max_value=50, value=2,
+                                            help="Počet frakcií, ktoré chceme pridať extra po dožiarení pôvodného " \
+                                            "kurzu (s navýšenými frakciami).")
     with cols[1]:
-        pocet_dni_rk = st.number_input("celkový počet dní kurzu", min_value=1, max_value=365, value=50)
+        pocet_dni_rk = st.number_input("celkový počet dní kurzu", min_value=1, max_value=365, value=50,
+                                        help="Celkový počet dní reálneho kurzu rádioterapie, vrátane prerušení a extra dní "
+                                        "kvôli extra frakciám.")
 
     cols = st.columns(2)
     with cols[0]:
-        tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1)
+        tumor_control = st.number_input("% predpísanej BED", min_value=0.1, max_value=100.0, value=100.0, step=0.1,
+                                        help="Percento pôvodne predpísanej BED, ktoré chceme dosiahnuť na tumor. " \
+                                        "Tu vieme vybalansovať navýšenie BED na tumor vs. OARs.")
         tumor_control = tumor_control / 100.0  # 1 <=> 100% prepisanej BED
 
 # Sidebar - volitelne parametre pre vypocet TCP
@@ -116,12 +128,31 @@ st.sidebar.link_button(
     "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
 )
 
-# osetrenie nefyzikalnych vstupov - ak su obe hodnoty parametrov nula, nastavime 1 pridanu frakciu
+# Osetrenie nefyzikalnych vstupov 
 if pocet_f_po_pauze == 0 and pocet_pridanych_f == 0:
+    # ak su obe hodnoty parametrov nula, nastavime 1 pridanu frakciu
     pocet_pridanych_f = 1
     st.warning(
         "Obe hodnoty parametrov - počet frakcií po pauze a počet pridaných frakcií - boli nula. " \
         "Automaticky som nastavil 1 pridanú frakciu, aby sa mohol vypočítať doplnok."
+    )
+
+if pocet_f_pred_pauzou + pocet_f_po_pauze != pocet_f_pk:
+    st.warning(
+        "Počet odžiarených frakcií + počet frakcií, kt. chceme navýšiť, sa musí rovnať počtu frakcií " \
+        "predpísaného kurzu. Skontrolujte zadané parametre."
+    )
+
+if pocet_dni_rk <= pocet_dni_pk:
+    st.warning(
+        "Celkový počet dní reálneho kurzu je menší alebo rovný počtu dní predpísaného kurzu. " \
+        "Skontrolujte zadané parametre."
+    )
+
+if pocet_f_pk > pocet_dni_pk:
+    st.warning(
+        "Počet frakcií predpísaného kurzu je väčší ako počet dní predpísaného kurzu. " \
+        "Program momentálne neumožňuje prípad viac frakcií za deň. Skontrolujte zadané parametre."
     )
 
 # Vypocet doplnku
@@ -151,8 +182,8 @@ if np.isnan(doplnok_f):
     doplnok_f = 0.0
 
 # Klinicke pravidlo: ak je vypocitana (rovnomerna) kompenzacia mensia
-# ako povodne predpisana frakcia, necháme zostavajuce frakcie po pauze 
-# nezmenene a pracujeme len s pridanými frakciami
+# ako povodne predpisana frakcia, nechame zostavajuce frakcie po pauze 
+# nezmenene a pracujeme len s pridanymi frakciami
 pridanie = doplnok_f
 if doplnok_f > 0 and doplnok_f < frakcia_pk and pocet_pridanych_f > 0:
     zvysok = frakcia_pk - doplnok_f
