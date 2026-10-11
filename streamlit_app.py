@@ -26,7 +26,7 @@ k = st.sidebar.number_input("$k~pre~tumor$", min_value=0.0, max_value=3.0, step=
                             help="Útlm BED za deň (Gy/d) pre tumor v dôsledku repopulácie. Pre OARs uvažujeme k=0.")
 
 t_delay = st.sidebar.number_input("$t_{delay}$", min_value=0, max_value=100, value=28,
-                            help="Čas od začiatku terapie kedy nastupuje akcelerovaná repopulácia v dňoch.")
+                            help="Čas od začiatku terapie kedy nastupuje akcelerovaná repopulácia v dňoch. V prípade adjuvancie je dobré zvoliť 0.")
 
 st.sidebar.markdown("## Parametre predpísaného kurzu (ideál):")
 
@@ -118,14 +118,14 @@ tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Pro
 
 if tcp_on:
     st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
-    a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.05)
+    a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.01)
     tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.95, step=0.01)
 
 st.sidebar.markdown("##")
 
 # Sidebar - link na navod
 st.sidebar.link_button(
-    "Návod na použitie", "https://drive.google.com/file/d/1uJ4FWIaHBFWqJ3gNcTUipBTGakqQmERE/view?usp=drivesdk"
+    "Návod na použitie", "https://github.com/Astromaut/doplnok-davky/blob/main/navod.pdf"
 )
 
 # Osetrenie nefyzikalnych vstupov 
