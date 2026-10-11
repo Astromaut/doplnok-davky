@@ -204,13 +204,8 @@ bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 # tu bude samotny vypocet povodne TCP - nove TCP ako pokles
 if tcp_on:
     delta_bed = bed_tumor_pk - bed_tumor_rk
-    # print(f"delta_bed: {delta_bed}")
-    # print(f"a_tumor * delta_bed: {a_tumor * delta_bed}")
-    # print(f"(np.exp(a_tumor * delta_bed)): {(np.exp(a_tumor * delta_bed))}")
     tcp_rk = tcp_pk**(np.exp(a_tumor * delta_bed))
-    #print(f"tcp_rk: {tcp_rk}")
     tcp_rk_perc = ((tcp_rk/tcp_pk)-1)*100
-    # print(f"tcp_rk_perc: {tcp_rk_perc}")
 
 # Stredovy panel - prezentacia vysledkov
 cols = st.columns(2)
@@ -246,27 +241,6 @@ with cols[0]:
 with cols[1]:
     st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
               delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
-
-st.markdown('#')
-pomocka = st.checkbox("Pomôcka: zaklikni, ak chceš vidieť prehľad parametrov tumorov z literatúry. Vzťah medzi "
-                      "$k$ a $D_{prolif}$: $k=D_{prolif}(1 + d/(\\alpha/\\beta))$, kde $d$ je veľkosť referenčnej "
-                      "frakcie.")
-
-if pomocka:
-    ab_params = pd.read_csv("ab_params.csv", sep=";", dtype=str)
-    ab_params = ab_params.rename(columns={"ab": "$\\alpha/\\beta$ (Gy)",
-                                          "ab-rozsah": "95% CL pre $\\alpha/\\beta$ (Gy)",
-                                          "ref": "referencia"})
-
-    st.table(ab_params)
-
-    prolif_params = pd.read_csv("prolif_params.csv", sep=";", dtype=str)
-    prolif_params = prolif_params.rename(columns={"dprolif": "$D_{prolif}$ (Gy/d)",
-                                                  "dprolif-rozsah": "95% CL pre $D_{prolif}$ (Gy/d)",
-                                                  "tdelay": "$t_{delay}$ (d)",
-                                                  "ref": "referencia"})
-
-    st.table(prolif_params)
 
 # Paticka - copyright
 st.markdown('#')
