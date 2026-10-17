@@ -7,7 +7,7 @@ Táto aplikácia pomáha vypočítať navýšené a/alebo doplnené frakcie pre 
 Je založená na báze LQ modelu s akcelerovanou repopuláciou -
 ref: [Dale et al. (2002)](https://pubmed.ncbi.nlm.nih.gov/12555877/).
 
-Návod na použitie nájdete [tu](https://github.com/Astromaut/doplnok-davky/blob/main/navod.pdf).
+Návod na použitie nájdete [tu](https://docs.google.com/document/d/1n_Z8EeC6_0RDR-sbpcFmgmya2mYR6AAW/edit?usp=sharing&ouid=109514329545120121337&rtpof=true&sd=true).
 
 
 ### How to run it on your own machine

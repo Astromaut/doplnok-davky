@@ -125,7 +125,7 @@ st.sidebar.markdown("##")
 
 # Sidebar - link na navod
 st.sidebar.link_button(
-    "Návod na použitie", "https://github.com/Astromaut/doplnok-davky/blob/main/navod.pdf"
+    "Návod na použitie", "https://docs.google.com/document/d/1n_Z8EeC6_0RDR-sbpcFmgmya2mYR6AAW/edit?usp=sharing&ouid=109514329545120121337&rtpof=true&sd=true"
 )
 
 # Osetrenie nefyzikalnych vstupov 
