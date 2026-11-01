@@ -8,6 +8,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from datetime import date, timedelta
+import reporting
 
 # Nastavenie stranky
 # Pod doplnkom mame na mysli bud navysenie a/alebo pridanie frakcii po preruseni kurzu radioterapie
@@ -241,6 +242,54 @@ with cols[0]:
 with cols[1]:
     st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
               delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+
+# Reporting
+st.markdown('####')
+
+if st.button("Generuj report do PDF"):
+    report_data = {
+        "title": "Doplnok dávky rádioterapie",
+        "subtitle": "Report z aplikácie",
+        "ab_tumor": ab_tumor,
+        "ab_org": ab_org,
+        "k": k,
+        "t_delay": t_delay,
+        "frakcia_pk": frakcia_pk,
+        "pocet_f_pk": pocet_f_pk,
+        "pocet_dni_pk": pocet_dni_pk,
+        "pocet_f_pred_pauzou": pocet_f_pred_pauzou,
+        "pocet_f_po_pauze": pocet_f_po_pauze,
+        "pocet_pridanych_f": pocet_pridanych_f,
+        "pocet_dni_rk": pocet_dni_rk,
+        "tumor_control_pct": tumor_control * 100,
+        "bed_tumor_pk": bed_tumor_pk,
+        "bed_org_pk": bed_org_pk,
+        "bed_tumor_rk": bed_tumor_rk,
+        "bed_org_add": bed_org_add,
+        "bed_org_navyse_perc": bed_org_navyse_perc,
+        "bed_tumor_ponize_perc": bed_tumor_ponize_perc,
+        "bed_tumor_rk_bezm": bed_tumor_rk_bezm,
+        "doplnok_f": doplnok_f,
+        "pridanie": pridanie,
+        "combo_summary": f"{pocet_f_po_pauze} x {doplnok_f:.2f} + {pocet_pridanych_f} x {pridanie:.2f} Gy",
+        "tcp_rows": (
+            f"{tcp_rk:.2f} ({tcp_rk_perc:.1f}%)"
+            if tcp_on else ""
+        ),
+        "warnings_html": (
+            "Skontrolujte zadané parametre."
+            if pocet_f_pred_pauzou + pocet_f_po_pauze != pocet_f_pk else ""
+        ),
+    }
+
+    pdf_bytes = reporting.export_report_pdf_reportlab(report_data)
+
+    st.download_button(
+        label="Stiahnuť PDF report",
+        data=pdf_bytes,
+        file_name="radiotherapy_report.pdf",
+        mime="application/pdf",
+    )
 
 # Paticka - copyright
 st.markdown('#')
