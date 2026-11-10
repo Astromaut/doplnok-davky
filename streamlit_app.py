@@ -53,9 +53,17 @@ else:
 # Stredovy - hlavny panel
 cols = st.columns(2)
 with cols[0]:
-    st.metric(label="Predpísaná tumor BED", value=f"{bed_tumor_pk:0.2f} Gy_{ab_tumor}")
+    st.metric(label="Predpísaná tumor BED s repopuláciou", value=f"{bed_tumor_pk:0.2f} Gy_{ab_tumor}")
 with cols[1]:
     st.metric(label="Predpísaná OARs BED", value=f"{bed_org_pk:0.2f} Gy_{ab_org}")
+
+cols = st.columns(2)
+with cols[0]:
+    tumor_eqd2 = bed_tumor_pk/(1+2/ab_tumor)
+    st.metric(label="Predpísaná tumor EQD2 s repopuláciou", value=f"{tumor_eqd2:0.2f} Gy")
+with cols[1]:
+    org_eqd2 = bed_org_pk/(1+2/ab_org)
+    st.metric(label="Predpísaná OARs EQD2", value=f"{org_eqd2:0.2f} Gy")
 
 st.markdown('####')
 
@@ -120,7 +128,7 @@ tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Pro
 if tcp_on:
     st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
     a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.01)
-    tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.95, step=0.01)
+    tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.90, step=0.01)
 
 st.sidebar.markdown("##")
 
@@ -154,6 +162,12 @@ if pocet_f_pk > pocet_dni_pk:
     st.warning(
         "Počet frakcií predpísaného kurzu je väčší ako počet dní predpísaného kurzu. " \
         "Program momentálne neumožňuje prípad viac frakcií za deň. Skontrolujte zadané parametre."
+    )
+
+if t_delay > pocet_dni_rk:
+    st.warning(
+        "Čas od začiatku terapie do nástupu akcelerovanej repopulácie je menší ako celkový počet dní reálneho kurzu. " \
+        "Skontrolujte zadané parametre."
     )
 
 # Vypocet doplnku
@@ -212,12 +226,28 @@ if tcp_on:
 cols = st.columns(2)
 with cols[0]:
     st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
-                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
-if tcp_on:
+                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy",
+              border=True,
+              icon=":material/add_task:")
     with cols[1]:
-        st.metric(label="TCP reálneho kurzu", 
+        st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
+                  delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+        
+cols = st.columns(2)
+if tcp_on:
+    with cols[0]:
+        st.metric(label="TCP s manažmentom prerušení", 
                   value=f"{tcp_rk:0.2f}",
                   delta=f"{tcp_rk_perc:0.1f}\%")
+    with cols[1]:
+        bed_tumor_rk_bezm = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_tumor) - k * (pocet_dni_rk - pocet_pridanych_f 
+                                                                                       - t_delay)
+        delta_bed_bezm = bed_tumor_pk - bed_tumor_rk_bezm
+        tcp_rk_bezm = tcp_pk**(np.exp(a_tumor * delta_bed_bezm))
+        tcp_rk_bezm_perc = ((tcp_rk_bezm /tcp_pk)-1)*100
+        st.metric(label="TCP bez manažmentu prerušení",
+                  value=f"{tcp_rk_bezm:0.2f}",
+                  delta=f"{tcp_rk_bezm_perc:0.1f}\%")
 
 cols = st.columns(2)
 with cols[0]:
@@ -238,10 +268,12 @@ cols = st.columns(2)
 with cols[0]:
     st.metric(label="OARs BED s manažmentom prerušení", value=f"{bed_org_add:0.2f} Gy_{ab_org}",
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
-
 with cols[1]:
-    st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
-              delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+    eqd2_org_add = bed_org_add/(1+2/ab_org)
+    eqd2_org_navyse_perc = ((eqd2_org_add/org_eqd2)-1)*100
+    st.metric(label="OARs EQD2 s manažmentom prerušení", value=f"{eqd2_org_add :0.2f} Gy",
+              delta=f"+{eqd2_org_navyse_perc:0.1f}\%", delta_color="inverse", border=True,
+              icon=":material/cardio_load:")
 
 # Reporting
 st.markdown('####')
