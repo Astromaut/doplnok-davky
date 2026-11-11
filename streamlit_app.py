@@ -285,7 +285,6 @@ st.markdown('####')
 if st.button("Generuj report do PDF"):
     report_data = {
         "title": "Doplnok dávky rádioterapie",
-        "subtitle": "Report z aplikácie",
         "ab_tumor": ab_tumor,
         "a_tumor": a_tumor,
         "ref_tcp": tcp_pk,
@@ -299,7 +298,6 @@ if st.button("Generuj report do PDF"):
         "pocet_f_po_pauze": pocet_f_po_pauze,
         "pocet_pridanych_f": pocet_pridanych_f,
         "pocet_dni_rk": pocet_dni_rk,
-        "tumor_control_pct": tumor_control * 100,
         "bed_tumor_pk": bed_tumor_pk,
         "bed_org_pk": bed_org_pk,
         "bed_tumor_rk": bed_tumor_rk,
