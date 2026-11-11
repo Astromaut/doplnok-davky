@@ -8,6 +8,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from datetime import date, timedelta
+import reporting
 
 # Nastavenie stranky
 # Pod doplnkom mame na mysli bud navysenie a/alebo pridanie frakcii po preruseni kurzu radioterapie
@@ -52,9 +53,17 @@ else:
 # Stredovy - hlavny panel
 cols = st.columns(2)
 with cols[0]:
-    st.metric(label="Predpísaná tumor BED", value=f"{bed_tumor_pk:0.2f} Gy_{ab_tumor}")
+    st.metric(label="Predpísaná tumor BED s repopuláciou", value=f"{bed_tumor_pk:0.2f} Gy_{ab_tumor}")
 with cols[1]:
     st.metric(label="Predpísaná OARs BED", value=f"{bed_org_pk:0.2f} Gy_{ab_org}")
+
+cols = st.columns(2)
+with cols[0]:
+    tumor_eqd2 = bed_tumor_pk/(1+2/ab_tumor)
+    st.metric(label="Predpísaná tumor EQD2 s repopuláciou", value=f"{tumor_eqd2:0.2f} Gy")
+with cols[1]:
+    org_eqd2 = bed_org_pk/(1+2/ab_org)
+    st.metric(label="Predpísaná OARs EQD2", value=f"{org_eqd2:0.2f} Gy")
 
 st.markdown('####')
 
@@ -116,10 +125,12 @@ else:
 tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať " \
                      "referenčné TCP pôvodne zamýšľaného kurzu a parameter $\\alpha$ pre tumor v ľavom stĺpci dole.")
 
+a_tumor = None
+tcp_pk = None
 if tcp_on:
     st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
     a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.01)
-    tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.95, step=0.01)
+    tcp_pk= st.sidebar.number_input("$ref.~TCP~pôvodného~kurzu$", min_value=0.01, max_value=0.99, value=0.90, step=0.01)
 
 st.sidebar.markdown("##")
 
@@ -133,8 +144,8 @@ if pocet_f_po_pauze == 0 and pocet_pridanych_f == 0:
     # ak su obe hodnoty parametrov nula, nastavime 1 pridanu frakciu
     pocet_pridanych_f = 1
     st.warning(
-        "Obe hodnoty parametrov - počet frakcií po pauze a počet pridaných frakcií - boli nula. " \
-        "Automaticky som nastavil 1 pridanú frakciu, aby sa mohol vypočítať doplnok."
+        "Obe hodnoty parametrov - počet frakcií, kt. chceme navýšiť a počet pridaných frakcií - boli nula. " \
+        "Automaticky som nastavil 1 pridanú extra frakciu, aby sa mohol vypočítať doplnok."
     )
 
 if pocet_f_pred_pauzou + pocet_f_po_pauze != pocet_f_pk:
@@ -153,6 +164,12 @@ if pocet_f_pk > pocet_dni_pk:
     st.warning(
         "Počet frakcií predpísaného kurzu je väčší ako počet dní predpísaného kurzu. " \
         "Program momentálne neumožňuje prípad viac frakcií za deň. Skontrolujte zadané parametre."
+    )
+
+if t_delay > pocet_dni_rk:
+    st.warning(
+        "Čas od začiatku terapie do nástupu akcelerovanej repopulácie je menší ako celkový počet dní reálneho kurzu. " \
+        "Skontrolujte zadané parametre."
     )
 
 # Vypocet doplnku
@@ -202,6 +219,8 @@ bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
 # Vypocet znizeneho TCP
 # tu bude samotny vypocet povodne TCP - nove TCP ako pokles
+tcp_rk = None
+tcp_rk_perc = None
 if tcp_on:
     delta_bed = bed_tumor_pk - bed_tumor_rk
     tcp_rk = tcp_pk**(np.exp(a_tumor * delta_bed))
@@ -210,13 +229,29 @@ if tcp_on:
 # Stredovy panel - prezentacia vysledkov
 cols = st.columns(2)
 with cols[0]:
-    st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
-                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy")
-if tcp_on:
+    st.metric(label="Navýšenie a pridanie frakcií", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
+                                                                  f"{pocet_pridanych_f} x {pridanie:0.2f} Gy",
+              border=True,
+              icon=":material/add_task:")
     with cols[1]:
-        st.metric(label="TCP reálneho kurzu", 
+        st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
+                  delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+        
+cols = st.columns(2)
+if tcp_on:
+    with cols[0]:
+        st.metric(label="TCP s manažmentom prerušení", 
                   value=f"{tcp_rk:0.2f}",
                   delta=f"{tcp_rk_perc:0.1f}\%")
+    with cols[1]:
+        bed_tumor_rk_bezm = pocet_f_pk * frakcia_pk * (1 + frakcia_pk/ab_tumor) - k * (pocet_dni_rk - pocet_pridanych_f 
+                                                                                       - t_delay)
+        delta_bed_bezm = bed_tumor_pk - bed_tumor_rk_bezm
+        tcp_rk_bezm = tcp_pk**(np.exp(a_tumor * delta_bed_bezm))
+        tcp_rk_bezm_perc = ((tcp_rk_bezm /tcp_pk)-1)*100
+        st.metric(label="TCP bez manažmentu prerušení",
+                  value=f"{tcp_rk_bezm:0.2f}",
+                  delta=f"{tcp_rk_bezm_perc:0.1f}\%")
 
 cols = st.columns(2)
 with cols[0]:
@@ -237,10 +272,53 @@ cols = st.columns(2)
 with cols[0]:
     st.metric(label="OARs BED s manažmentom prerušení", value=f"{bed_org_add:0.2f} Gy_{ab_org}",
               delta=f"+{bed_org_navyse_perc:0.1f}\%", delta_color="inverse")
-
 with cols[1]:
-    st.metric(label="Počet dní reálneho kurzu rádioterapie", value=pocet_dni_rk,
-              delta=f"{((pocet_dni_rk/pocet_dni_pk)-1)*100:0.1f}\%", delta_color="inverse")
+    eqd2_org_add = bed_org_add/(1+2/ab_org)
+    eqd2_org_navyse_perc = ((eqd2_org_add/org_eqd2)-1)*100
+    st.metric(label="OARs EQD2 s manažmentom prerušení", value=f"{eqd2_org_add :0.2f} Gy",
+              delta=f"+{eqd2_org_navyse_perc:0.1f}\%", delta_color="inverse", border=True,
+              icon=":material/cardio_load:")
+
+# Reporting
+st.markdown('####')
+
+if st.button("Generuj report do PDF"):
+    report_data = {
+        "title": "Doplnok dávky rádioterapie",
+        "ab_tumor": ab_tumor,
+        "a_tumor": a_tumor,
+        "ref_tcp": tcp_pk,
+        "ab_org": ab_org,
+        "k": k,
+        "t_delay": t_delay,
+        "frakcia_pk": frakcia_pk,
+        "pocet_f_pk": pocet_f_pk,
+        "pocet_dni_pk": pocet_dni_pk,
+        "pocet_f_pred_pauzou": pocet_f_pred_pauzou,
+        "pocet_f_po_pauze": pocet_f_po_pauze,
+        "pocet_pridanych_f": pocet_pridanych_f,
+        "pocet_dni_rk": pocet_dni_rk,
+        "bed_tumor_pk": bed_tumor_pk,
+        "bed_org_pk": bed_org_pk,
+        "bed_tumor_rk": bed_tumor_rk,
+        "bed_org_add": bed_org_add,
+        "bed_org_navyse_perc": bed_org_navyse_perc,
+        "bed_tumor_ponize_perc": bed_tumor_ponize_perc,
+        "eqd2_org_add": eqd2_org_add,
+        "eqd2_org_add_perc": eqd2_org_navyse_perc,
+        "combo_summary": f"{pocet_f_po_pauze} x {doplnok_f:.2f} + {pocet_pridanych_f} x {pridanie:.2f} Gy",
+        "tcp_rk": tcp_rk,
+        "tcp_rk_perc": tcp_rk_perc
+    }
+
+    pdf_bytes = reporting.export_report_pdf_reportlab(tcp_on, report_data)
+
+    st.download_button(
+        label="Stiahnuť PDF report",
+        data=pdf_bytes,
+        file_name="radiotherapy_report.pdf",
+        mime="application/pdf",
+    )
 
 # Paticka - copyright
 st.markdown('#')
