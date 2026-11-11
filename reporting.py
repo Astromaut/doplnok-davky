@@ -195,8 +195,18 @@ def export_report_pdf_reportlab(tcp: bool, report_data: dict) -> bytes:
             ],
             [
                 "OARs EQD2 %-navýšenie", 
-                f"{report_data.get('eqd2_org_add_perc', 0):.1f}%"]
+                f"{report_data.get('eqd2_org_add_perc', 0):.1f}%"],
+            [
+                "OARs poznámky", 
+                ""],
+            [
+                "", 
+                ""],
+            [
+                "", 
+                ""],
         ]
+        
     else:
         results = [
             ["Výsledok", "Hodnota"],
@@ -207,7 +217,19 @@ def export_report_pdf_reportlab(tcp: bool, report_data: dict) -> bytes:
             ],
             [
                 "OARs EQD2 %-navýšenie", 
-                f"{report_data.get('eqd2_org_add_perc', 0):.1f}%"]
+                f"{report_data.get('eqd2_org_add_perc', 0):.1f}%"],
+            [
+                "OARs poznámky", 
+                ""],
+            [
+                "", 
+                ""],
+            [
+                "", 
+                ""],
+            [
+                "", 
+                ""],
         ]
 
     results_table = Table(results, colWidths=[220, 220])
@@ -225,18 +247,13 @@ def export_report_pdf_reportlab(tcp: bool, report_data: dict) -> bytes:
     )
     story.append(results_table)
 
-    warnings = report_data.get("warnings_html", "")
-    if warnings:
-        story.append(Spacer(1, 12))
-        story.append(Paragraph(warnings, styles["Italic"]))
-
-    story.append(Spacer(1, 16))
-    story.append(
-        Paragraph(
-            "(c) ÚVN SNP Ružomberok FN",
-            styles["BodyText"],
-        )
-    )
+    # story.append(Spacer(1, 12))
+    # story.append(
+    #     Paragraph(
+    #         "(c) ÚVN SNP Ružomberok FN",
+    #         styles["BodyText"],
+    #     )
+    # )
 
     doc.build(story)
     buffer.seek(0)
