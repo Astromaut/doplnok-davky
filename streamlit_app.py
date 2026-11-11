@@ -308,7 +308,8 @@ if st.button("Generuj report do PDF"):
         "eqd2_org_add_perc": eqd2_org_navyse_perc,
         "combo_summary": f"{pocet_f_po_pauze} x {doplnok_f:.2f} + {pocet_pridanych_f} x {pridanie:.2f} Gy",
         "tcp_rk": tcp_rk,
-        "tcp_rk_perc": tcp_rk_perc
+        "tcp_rk_perc": tcp_rk_perc,
+        "tumor_control_pct": tumor_control*100
     }
 
     pdf_bytes = reporting.export_report_pdf_reportlab(tcp_on, report_data)
