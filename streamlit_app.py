@@ -125,6 +125,8 @@ else:
 tcp_on = st.checkbox("Zaklikni, ak chceš spočítať aj zmenu Tumor Control Probability TCP. Vyžaduje zadať " \
                      "referenčné TCP pôvodne zamýšľaného kurzu a parameter $\\alpha$ pre tumor v ľavom stĺpci dole.")
 
+a_tumor = None
+tcp_pk = None
 if tcp_on:
     st.sidebar.markdown("## Výber prídavných parametrov pre výpočet TCP:")
     a_tumor = st.sidebar.number_input("$\\alpha~pre~tumor$", min_value=0.1, max_value=5.0, value=0.3, step=0.01)
@@ -142,8 +144,8 @@ if pocet_f_po_pauze == 0 and pocet_pridanych_f == 0:
     # ak su obe hodnoty parametrov nula, nastavime 1 pridanu frakciu
     pocet_pridanych_f = 1
     st.warning(
-        "Obe hodnoty parametrov - počet frakcií po pauze a počet pridaných frakcií - boli nula. " \
-        "Automaticky som nastavil 1 pridanú frakciu, aby sa mohol vypočítať doplnok."
+        "Obe hodnoty parametrov - počet frakcií, kt. chceme navýšiť a počet pridaných frakcií - boli nula. " \
+        "Automaticky som nastavil 1 pridanú extra frakciu, aby sa mohol vypočítať doplnok."
     )
 
 if pocet_f_pred_pauzou + pocet_f_po_pauze != pocet_f_pk:
@@ -217,6 +219,8 @@ bed_tumor_ponize_perc = ((bed_tumor_rk/bed_tumor_pk)-1)*100
 
 # Vypocet znizeneho TCP
 # tu bude samotny vypocet povodne TCP - nove TCP ako pokles
+tcp_rk = None
+tcp_rk_perc = None
 if tcp_on:
     delta_bed = bed_tumor_pk - bed_tumor_rk
     tcp_rk = tcp_pk**(np.exp(a_tumor * delta_bed))
@@ -225,7 +229,7 @@ if tcp_on:
 # Stredovy panel - prezentacia vysledkov
 cols = st.columns(2)
 with cols[0]:
-    st.metric(label="Navýšenie frakcií a doplnok po pauze", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
+    st.metric(label="Navýšenie a pridanie frakcií", value=f"{pocet_f_po_pauze} x {doplnok_f:0.2f} + "
                                                                   f"{pocet_pridanych_f} x {pridanie:0.2f} Gy",
               border=True,
               icon=":material/add_task:")
@@ -283,6 +287,8 @@ if st.button("Generuj report do PDF"):
         "title": "Doplnok dávky rádioterapie",
         "subtitle": "Report z aplikácie",
         "ab_tumor": ab_tumor,
+        "a_tumor": a_tumor,
+        "ref_tcp": tcp_pk,
         "ab_org": ab_org,
         "k": k,
         "t_delay": t_delay,
@@ -300,21 +306,14 @@ if st.button("Generuj report do PDF"):
         "bed_org_add": bed_org_add,
         "bed_org_navyse_perc": bed_org_navyse_perc,
         "bed_tumor_ponize_perc": bed_tumor_ponize_perc,
-        "bed_tumor_rk_bezm": bed_tumor_rk_bezm,
-        "doplnok_f": doplnok_f,
-        "pridanie": pridanie,
+        "eqd2_org_add": eqd2_org_add,
+        "eqd2_org_add_perc": eqd2_org_navyse_perc,
         "combo_summary": f"{pocet_f_po_pauze} x {doplnok_f:.2f} + {pocet_pridanych_f} x {pridanie:.2f} Gy",
-        "tcp_rows": (
-            f"{tcp_rk:.2f} ({tcp_rk_perc:.1f}%)"
-            if tcp_on else ""
-        ),
-        "warnings_html": (
-            "Skontrolujte zadané parametre."
-            if pocet_f_pred_pauzou + pocet_f_po_pauze != pocet_f_pk else ""
-        ),
+        "tcp_rk": tcp_rk,
+        "tcp_rk_perc": tcp_rk_perc
     }
 
-    pdf_bytes = reporting.export_report_pdf_reportlab(report_data)
+    pdf_bytes = reporting.export_report_pdf_reportlab(tcp_on, report_data)
 
     st.download_button(
         label="Stiahnuť PDF report",
